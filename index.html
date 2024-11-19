@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Breakout Game - A classic arcade experience">
+<title>Breakout Game</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+<header class="py-4 px-6 bg-gray-800">
+<nav class="flex justify-between items-center max-w-6xl mx-auto">
+<h1 class="text-2xl font-bold">Breakout</h1>
+<div id="score" class="text-xl">Score: 0</div>
+</nav>
+</header>
+<main class="flex justify-center items-center p-4">
+<div id="game" class="rounded-lg overflow-hidden shadow-2xl"></div>
+</main>
+<script>
+    const config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        parent: 'game',
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 0 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    const gameState = {
+        score: 0,
+        gameOver: false,
+        paddle: null,
+        ball: null,
+        bricks: null,
+        scoreText: null
+    };
+
+    const game = new Phaser.Game(config);
+
+    function preload() {
+        this.load.setBaseURL('https://labs.phaser.io');
+        this.load.image('ball', 'assets/sprites/ball.png');
+        this.load.image('paddle', 'assets/sprites/paddle.png');
+        this.load.image('brick', 'assets/sprites/brick.png');
+    }
+
+    function create() {
+        gameState.paddle = this.add.rectangle(400, 550, 100, 20, 0x00ff00);
+        this.physics.add.existing(gameState.paddle, true);
+
+        gameState.ball = this.add.circle(400, 530, 10, 0xffffff);
+        this.physics.add.existing(gameState.ball);
+        gameState.ball.body.setCollideWorldBounds(true);
+        gameState.ball.body.setBounce(1, 1);
+        gameState.ball.body.setVelocity(200, -200);
+
+        gameState.bricks = this.physics.add.staticGroup();
+        for(let i = 0; i < 5; i++) {
+            for(let j = 0; j < 8; j++) {
+                const brick = gameState.bricks.create(80 + j * 90, 60 + i * 30, 'brick');
+                brick.setScale(0.5);
+            }
+        }
+
+        this.physics.add.collider(gameState.ball, gameState.paddle);
+        this.physics.add.collider(gameState.ball, gameState.bricks, hitBrick, null, this);
+
+        this.input.on('pointermove', function (pointer) {
+            gameState.paddle.x = Phaser.Math.Clamp(pointer.x, 50, 750);
+        });
+    }
+
+    function update() {
+        if (gameState.ball.y > 600) {
+            gameOver();
+        }
+    }
+
+    function hitBrick(ball, brick) {
+        brick.destroy();
+        gameState.score += 10;
+        document.getElementById('score').textContent = `Score: ${gameState.score}`;
+
+        if (gameState.bricks.countActive() === 0) {
+            gameWin();
+        }
+    }
+
+    function gameOver() {
+        gameState.gameOver = true;
+        this.physics.pause();
+        this.add.text(400, 300, 'Game Over', {
+            fontSize: '64px',
+            fill: '#fff'
+        }).setOrigin(0.5);
+    }
+
+    function gameWin() {
+        gameState.gameOver = true;
+        this.physics.pause();
+        this.add.text(400, 300, 'You Win!', {
+            fontSize: '64px',
+            fill: '#fff'
+        }).setOrigin(0.5);
+    }
+    </script>
+</body>
+</html>
